@@ -8,6 +8,7 @@
 import os
 import uuid
 
+from django.http import FileResponse
 from rest_framework import status
 from rest_framework.generics import GenericAPIView
 from rest_framework.response import Response
@@ -77,3 +78,15 @@ class ImgView(GenericAPIView):
             img_obj.delete()
             log.info(f"图片删除成功, ID: {img_id}, 名称: {img_obj.name}")
         return Response("删除成功", status=status.HTTP_200_OK)
+
+
+class ImgFileView(GenericAPIView):
+    def get(self, request, file_name):
+        file_path = os.path.join(settings.MEDIA_ROOT, file_name)
+        try:
+            file = open(file_path, 'rb')
+            return FileResponse(file)
+        except FileNotFoundError:
+            return Response("图片不存在", status=status.HTTP_404_NOT_FOUND)
+        except Exception as e:
+            return Response("异常", status=status.HTTP_500_INTERNAL_SERVER_ERROR)
