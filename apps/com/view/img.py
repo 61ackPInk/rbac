@@ -5,6 +5,9 @@
 @Date: 2026/9/5 11:28
 @Desc : 
 """
+import os
+import uuid
+
 from rest_framework import status
 from rest_framework.generics import GenericAPIView
 from rest_framework.response import Response
@@ -13,7 +16,8 @@ from apps.com.serializers import ImgSeria
 from apps.com.models import Img
 from common.utils.log import log
 from common.utils import my_utils
-import uuid
+
+from rbac import settings
 
 
 class ImgView(GenericAPIView):
@@ -49,6 +53,27 @@ class ImgView(GenericAPIView):
         接收参数 file_name
         """
         # 获取删除图片的名字
-        file_name = request.query_params.get('file_name')
-        my_utils.delete_file(file_name)
+        img_id = kwargs.get('pk')
+        if not img_id:
+            return Response("缺少图片id", status=status.HTTP_400_BAD_REQUEST)
+
+        try:
+            # 获取图片对象
+            img_obj = Img.objects.get(pk=img_id)
+        except Img.DoesNotExist:
+            return Response("图片不存在", status=status.HTTP_400_BAD_REQUEST)
+
+        if img_obj.file:
+            file_path = os.path.join(settings.MEDIA_ROOT, img_obj.file.name)
+            if os.path.exists(file_path):
+                try:
+                    os.remove(file_path)
+                    log.info(f"删除成功- {file_path}")
+                except Exception as e:
+                    log.error(f"删除失败: {str(e)}")
+                    return Response(f"删除失败： {e}", status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+            else:
+                log.info(f"文件不存在 - {file_path}")
+            img_obj.delete()
+            log.info(f"图片删除成功, ID: {img_id}, 名称: {img_obj.name}")
         return Response("删除成功", status=status.HTTP_200_OK)

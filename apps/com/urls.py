@@ -12,4 +12,5 @@ from apps.com.view.img import ImgView
 urlpatterns = [
     # 图片上传、删除
     path('img/', ImgView.as_view(), name='img'),
+    path('img/<int:pk>/', ImgView.as_view(), name='img_detail'),
 ]
